@@ -1,0 +1,114 @@
+/* 基本樣式 */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    background-color: #f0f2f5; margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden;
+}
+.borderless-window { -webkit-app-region: drag; background-color: transparent !important; }
+.app-container { display: flex; gap: 30px; align-items: flex-start; padding: 20px; }
+.borderless-window .spin-button, .borderless-window #countdown-display { -webkit-app-region: no-drag; }
+
+
+button { padding: 10px; font-size: 16px; font-weight: 500; border: none; border-radius: 5px; cursor: pointer; transition: all 0.2s ease; color: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+button:active { transform: translateY(1px); box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+
+/* --- 頂部視窗控制按鈕 --- */
+.window-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid #ecf0f1; padding-bottom: 15px; }
+#show-turntable-btn { background-color: #3498db; }
+#show-turntable-btn:hover { background-color: #2980b9; }
+#show-timer-btn { background-color: #9b59b6; }
+#show-timer-btn:hover { background-color: #8e44ad; }
+.window-controls button.active { background-color: #e67e22; }
+.window-controls button.active:hover { background-color: #d35400; }
+
+/* --- 匯入/匯出按鈕 --- */
+.io-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+.io-controls button { background-color: #7f8c8d; font-size: 14px; }
+.io-controls button:hover { background-color: #6c7a89; }
+
+/* --- 選項列表與轉盤  --- */
+.options-container { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 460px; max-height: 90vh; display: flex; flex-direction: column; }
+.options-container h2 { margin-top: 0; text-align: center; color: #2c3e50; }
+#options-list { flex-grow: 1; overflow-y: auto; margin-bottom: 15px; padding-right: 5px; }
+.option-row { display: flex; align-items: center; gap: 5px; margin-bottom: 8px; }
+/* ...其他 .option-row 樣式不變... */
+.wheel-container { position: relative; width: 500px; height: 500px; }
+/* ... 其他轉盤樣式不變 ... */
+
+/* 核心修正：新增/更新轉盤按鈕 使用 Grid 佈局對齊 */
+.action-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+#add-option-btn { background-color: #27ae60; }
+#add-option-btn:hover { background-color: #229954; }
+#update-wheel-btn { background-color: #3498db; }
+#update-wheel-btn:hover { background-color: #2980b9; }
+
+/* --- 計時器面板 --- */
+.countdown-timer-container { border-top: 1px solid #ecf0f1; margin-top: 15px; padding-top: 15px; }
+.countdown-timer-container h3 { margin: 0 0 10px 0; text-align: center; color: #34495e; font-weight: 500; }
+#countdown-display { font-family: 'Courier New', Courier, monospace; font-size: 2.8em; text-align: center; background-color: #2c3e50; color: #ecf0f1; border-radius: 6px; padding: 5px 10px; margin-bottom: 10px; }
+
+
+/*  計時器控制面板  */
+.timer-controls-grid { display: grid; grid-template-columns: 1fr 1fr auto auto; gap: 10px; margin-bottom: 10px; align-items: center; }
+#start-pause-btn { background-color: #2ecc71; }
+#start-pause-btn.paused { background-color: #f39c12; }
+#reset-btn { background-color: #e74c3c; }
+.color-picker-wrapper { display: flex; align-items: center; gap: 5px; font-size: 14px; padding: 0 5px; }
+/* ... 顏色選擇器樣式不變 ... */
+
+/*  時間調整按鈕  */
+.time-adjust-buttons { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.time-adjust-buttons button { background-color: #ecf0f1; color: #34495e; font-size: 14px; padding: 8px; }
+.time-adjust-buttons button:hover { background-color: #dde1e4; }
+
+/*  F8/F9 功能樣式  */
+#timer-wrapper.transparent #countdown-display { background-color: transparent !important; }
+#countdown-display.bold-text { font-weight: bold; }
+.sortable-ghost {
+    opacity: 0.4;
+    background: #c8ebfb;
+}
+.drag-handle {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: 20px;
+    height: 36px;
+    cursor: grab;
+    color: #bdc3c7;
+    flex-shrink: 0;
+}
+.option-row input[type="text"] { flex-grow: 1; padding: 8px; border: 1px solid #bdc3c7; border-radius: 4px; font-size: 14px; min-width: 50px; }
+.option-row input[type="number"] { width: 45px; padding: 8px; border: 1px solid #bdc3c7; border-radius: 4px; text-align: center; flex-shrink: 0; }
+.option-row input[type=number]::-webkit-inner-spin-button, .option-row input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.option-row input[type=number] { -moz-appearance: textfield; }
+.option-percentage { width: 50px; text-align: right; font-size: 13px; color: #7f8c8d; padding-right: 5px; flex-shrink: 0; }
+.option-row input[type="color"] { -webkit-appearance: none; width: 36px; height: 36px; border: 1px solid #bdc3c7; border-radius: 4px; cursor: pointer; padding: 0; background-color: transparent; flex-shrink: 0; }
+.option-row input[type="color"]::-webkit-color-swatch-wrapper { padding: 2px; }
+.option-row input[type="color"]::-webkit-color-swatch { border: none; border-radius: 3px; }
+.option-row .remove-btn { background: none; border: none; color: #e74c3c; font-size: 20px; cursor: pointer; padding: 5px; flex-shrink: 0; }
+.wheel-container::after { content: ''; position: absolute; top: -5px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 20px solid transparent; border-right: 20px solid transparent; border-top: 30px solid #c0392b; z-index: 10; }
+.spin-button { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 100px; height: 100px; background-color: #ffffff; border: 8px solid #ecf0f1; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 24px; font-weight: bold; color: #34495e; cursor: pointer; user-select: none; transition: transform 0.1s ease, background-color 0.2s; }
+.spin-button:hover { background-color: #f9f9f9; }
+.spin-button:active { transform: translate(-50%, -50%) scale(0.95); }
+.timer-inputs { display: flex; gap: 2px; align-items: center; position: relative; flex-shrink: 0; }
+.timer-inputs::before { content: '|'; color: #bdc3c7; margin: 0 4px; }
+.timer-inputs input { width: 35px !important; font-size: 12px; padding: 8px 4px !important; text-align: center; }
+.timer-inputs input:not(:first-child) { margin-left: 8px; }
+.timer-inputs input:not(:first-child)::before { content: ":"; position: absolute; left: -6px; color: #2c3e50; font-weight: bold; }
+.timer-inputs input.option-m-input::before { left: 40px; }
+.timer-inputs input.option-s-input::before { left: 85px; }
+.color-picker-wrapper input[type="color"] { -webkit-appearance: none; width: 28px; height: 28px; border: 1px solid #bdc3c7; border-radius: 4px; cursor: pointer; padding: 0; background-color: transparent; }
+.color-picker-wrapper input[type="color"]::-webkit-color-swatch-wrapper { padding: 2px; }
+.color-picker-wrapper input[type="color"]::-webkit-color-swatch { border: none; border-radius: 3px; }
+.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); display: flex; justify-content: center; align-items: center; z-index: 1000; opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0.3s; }
+.modal-overlay.visible { opacity: 1; visibility: visible; }
+.modal-content { background-color: white; padding: 30px 40px; border-radius: 12px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.3); transform: scale(0.8); transition: transform 0.3s ease; -webkit-app-region: no-drag; }
+.modal-overlay.visible .modal-content { transform: scale(1); }
+#winner-text { font-size: 2.5em; color: #e67e22; margin: 10px 0 20px; }
+.modal-buttons button { padding: 10px 20px; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; margin: 0 10px; }
+#close-modal-btn { background-color: #95a5a6; color: white; }

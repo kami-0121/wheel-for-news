@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>轉盤</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="borderless-window">
+    <div class="wheel-container" style="margin: 20px;">
+        <canvas id="canvas" width="500" height="500"></canvas>
+        <div class="spin-button" id="spin_button">SPIN</div>
+    </div>
+
+    <div id="modal" class="modal-overlay">
+        <div class="modal-content">
+            <p>中獎的是...</p>
+            <h2 id="winner-text"></h2>
+            <div class="modal-buttons">
+                <button id="close-modal-btn">關閉</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="TweenMax.min.js"></script>
+    <script src="Winwheel.js"></script>
+    <script src="confetti.min.js"></script>
+    <script src="turntable.js"></script>
+</body>
+</html>
