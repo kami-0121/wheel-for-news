@@ -30,3 +30,9 @@ ipcRenderer.on('time-update', (event, timeString) => {
 ipcRenderer.on('f10-pressed', () => {
     ipcRenderer.send('toggle-my-frame');
 });
+
+ipcRenderer.on('wheel-font-change', (event, fontFamily) => {
+    if (countdownDisplay) {
+        countdownDisplay.style.fontFamily = fontFamily;
+    }
+});

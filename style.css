@@ -7,6 +7,36 @@ body {
 .app-container { display: flex; gap: 30px; align-items: flex-start; padding: 20px; }
 .borderless-window .spin-button, .borderless-window #countdown-display { -webkit-app-region: no-drag; }
 
+/* Noto Sans TC */
+@font-face {
+  font-family: 'NotoSansTC';
+  src: url('./fonts/NotoSansTC-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+
+/* 思源宋體（子集） */
+@font-face {
+  font-family: 'SourceHanSerifTC';
+  src: url('./fonts/SourceHanSerifTC-subset.woff2') format('woff2');
+  font-display: swap;
+}
+
+/* Excalifont */
+@font-face {
+  font-family: 'Excalifont-Regular';
+  src: url('./fonts/Excalifont-Regular.woff2') format('woff2');
+  font-display: swap;
+}
+
+/* 預設 */
+body {
+  font-family:
+    'cwTeXFangSong',
+    'NotoSansTC',
+    'Microsoft JhengHei',
+    serif;
+}
 
 button { padding: 10px; font-size: 16px; font-weight: 500; border: none; border-radius: 5px; cursor: pointer; transition: all 0.2s ease; color: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
 button:active { transform: translateY(1px); box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
@@ -27,7 +57,44 @@ button:active { transform: translateY(1px); box-shadow: 0 1px 2px rgba(0,0,0,0.1
 
 /* --- 選項列表與轉盤  --- */
 .options-container { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 460px; max-height: 90vh; display: flex; flex-direction: column; }
+.divider {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end; /* p 靠右 */
+    height: 80px; /* 視需求 */
+}
+
+.divider h2 {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    margin: 0;
+}
+
+.divider-select {
+    font-size: 14px;
+    padding: 6px 18px 6px 6px;
+    border: none;
+    background: transparent;
+    color: #7f8c8d;
+
+    appearance: none;
+    cursor: pointer;
+}
+
+.divider-select:hover {
+    color: #2c3e50;
+}
+
+.divider-select:focus {
+    outline: none;
+    color: #4f8cff;
+}
+
+
 .options-container h2 { margin-top: 0; text-align: center; color: #2c3e50; }
+.options-container p { margin-top: 5px; margin-bottom: 15px; text-align: center; color: #7f8c8d; font-size: 14px; }
 #options-list { flex-grow: 1; overflow-y: auto; margin-bottom: 15px; padding-right: 5px; }
 .option-row { display: flex; align-items: center; gap: 5px; margin-bottom: 8px; }
 /* ...其他 .option-row 樣式不變... */
@@ -65,8 +132,13 @@ button:active { transform: translateY(1px); box-shadow: 0 1px 2px rgba(0,0,0,0.1
 .time-adjust-buttons button:hover { background-color: #dde1e4; }
 
 /*  F8/F9 功能樣式  */
-#timer-wrapper.transparent #countdown-display { background-color: transparent !important; }
-#countdown-display.bold-text { font-weight: bold; }
+#timer-wrapper.transparent #countdown-display {
+    background-color: transparent !important;
+}
+
+#countdown-display.bold-text {
+    font-weight: bold !important;
+}
 .sortable-ghost {
     opacity: 0.4;
     background: #c8ebfb;
@@ -84,8 +156,8 @@ button:active { transform: translateY(1px); box-shadow: 0 1px 2px rgba(0,0,0,0.1
 }
 .option-row input[type="text"] { flex-grow: 1; padding: 8px; border: 1px solid #bdc3c7; border-radius: 4px; font-size: 14px; min-width: 50px; }
 .option-row input[type="number"] { width: 45px; padding: 8px; border: 1px solid #bdc3c7; border-radius: 4px; text-align: center; flex-shrink: 0; }
-.option-row input[type=number]::-webkit-inner-spin-button, .option-row input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
-.option-row input[type=number] { -moz-appearance: textfield; }
+.option-row input[type=text]::-webkit-inner-spin-button, .option-row input[type=text]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.option-row input[type=text] { -moz-appearance: textfield; }
 .option-percentage { width: 50px; text-align: right; font-size: 13px; color: #7f8c8d; padding-right: 5px; flex-shrink: 0; }
 .option-row input[type="color"] { -webkit-appearance: none; width: 36px; height: 36px; border: 1px solid #bdc3c7; border-radius: 4px; cursor: pointer; padding: 0; background-color: transparent; flex-shrink: 0; }
 .option-row input[type="color"]::-webkit-color-swatch-wrapper { padding: 2px; }

@@ -8,6 +8,7 @@ const closeModalBtn = document.getElementById('close-modal-btn');
 let theWheel;
 let spinning = false;
 let parsedOptions = [];
+let currentWheelFont = 'cwTeXFangSong';
 
 // --- IPC 通訊 ---
 ipcRenderer.on('f10-pressed', () => {
@@ -17,6 +18,23 @@ ipcRenderer.on('f10-pressed', () => {
 ipcRenderer.on('wheel-updated', (event, optionsData) => {
     parsedOptions = optionsData;
     updateWheel(optionsData);
+});
+
+
+ipcRenderer.on('wheel-font-change', (event, fontFamily) => {
+    currentWheelFont = fontFamily;
+
+    // 1. 更新轉盤物件
+    if (theWheel) {
+        theWheel.textFontFamily = fontFamily;
+        theWheel.draw(); // 必須呼叫這個才會重畫 Canvas
+    }
+
+    // 2. 更新中獎彈窗 (Modal)
+    const modalContent = document.querySelector('.modal-content');
+    if (modalContent) {
+        modalContent.style.fontFamily = fontFamily;
+    }
 });
 
 // --- 初始化 ---
@@ -47,7 +65,7 @@ function updateWheel(options) {
         'outerRadius': 240,
         'innerRadius': 70,
         'textFontSize': 19,
-        'textFontFamily': 'cwTeXFangSong',
+        'textFontFamily': currentWheelFont,
         'textFillStyle': 'black',
         'textOrientation': 'horizontal', // 確保文字方向正確
         'segments': segmentsForWheel,

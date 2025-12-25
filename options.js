@@ -15,24 +15,54 @@ const resetBtn = document.getElementById('reset-btn');
 const timeAdjustButtons = document.querySelectorAll('.time-btn');
 const bgColorPicker = document.getElementById('bg-color-picker');
 const fontColorPicker = document.getElementById('font-color-picker');
+const fontSelect = document.querySelector('.divider-select');
 
-// --- 核心函數：狀態管理 ---
+const fonts = [
+  { label: '仿宋（cwTeXFangSong）', family: 'cwTeXFangSong' },        // 系統預設
+  { label: '黑體（Noto Sans TC）', family: 'NotoSansTC' },           // 內建 woff2
+  { label: '思源宋體', family: 'SourceHanSerifTC' },                 // 內建 woff2（子集）
+  { label: '微軟正黑體', family: 'Microsoft JhengHei' },             // 系統字型
+  { label: '標楷體', family: 'DFKai-SB' },                            // 系統字型
+  { label: 'Excalifont', family: 'Excalifont-Regular' }              // 內建 woff2
+];
+
+// 🔴 你原本少的就是這段：把字體塞進 select
+fonts.forEach(font => {
+  const option = document.createElement('option');
+  option.value = font.family;      // 傳給 turntable.js 的值
+  option.textContent = font.label; // UI 顯示名稱
+  fontSelect.appendChild(option);
+});
+
+// 切換字體 → 通知轉盤
+fontSelect.addEventListener('change', (e) => {
+  const font = e.target.value;
+    ipcRenderer.send('wheel-font-change', font);
+    // 選項視窗自己也套用，這樣預覽才一致
+    document.getElementById('countdown-display').style.fontFamily = font;
+});
 function getCurrentState() {
   const options = [];
   document.querySelectorAll('.option-row').forEach(row => {
     options.push({
       name: row.querySelector('.option-name-input').value.trim(),
+      // 機率維持 parseFloat，因為它必須是純數字供轉盤計算比例
       probability: parseFloat(row.querySelector('.option-prob-input').value) || 1,
       color: row.querySelector('.option-color-input').value,
-      h: parseInt(row.querySelector('.option-h-input').value) || 0,
-      m: parseInt(row.querySelector('.option-m-input').value) || 0,
-      s: parseInt(row.querySelector('.option-s-input').value) || 0,
+      
+      // ✅ 修正：移除 parseInt，直接拿字串值，保留 *2, /0.5, +30
+      h: row.querySelector('.option-h-input').value || "0",
+      m: row.querySelector('.option-m-input').value || "0",
+      s: row.querySelector('.option-s-input').value || "0",
     });
   });
 
-  const timeParts = countdownDisplay.textContent.replace('-', '').split(':');
-  const sign = countdownDisplay.textContent.startsWith('-') ? -1 : 1;
+  // ... (其餘處理時間和顏色的部分保持不變)
+  const timeText = countdownDisplay.textContent;
+  const timeParts = timeText.replace('-', '').split(':');
+  const sign = timeText.startsWith('-') ? -1 : 1;
   const countdownSeconds = sign * (parseInt(timeParts[0])*3600 + parseInt(timeParts[1])*60 + parseInt(timeParts[2]));
+  
   const timerColors = {
     background: bgColorPicker.value,
     font: fontColorPicker.value
@@ -57,6 +87,11 @@ function applyState(state) {
     fontColorPicker.value = state.timerColors.font || '#ecf0f1';
     sendColorUpdate();
   }
+  if (state.fontFamily) {
+    fontSelect.value = state.fontFamily;
+    document.getElementById('countdown-display').style.fontFamily = state.fontFamily;
+    ipcRenderer.send('wheel-font-change', state.fontFamily);
+}
   updatePercentages();
   updateWheelBtn.click();
 }
@@ -322,60 +357,21 @@ function createOptionRow(name = '', probability = 1, color = getRandomColor(), h
   };
 
   // 驗證運算式是否符合規則
-  const isValidTimerExpression = (expr) => {
-    if (!expr) return true; // 空值允許
+    const isValidTimerExpression = (expr) => {
+    if (!expr) return true;
+    // 允許：數字、小數點、以及開頭或中間的運算符
+    // 簡化規則：只要不包含非法字元，且小數點/運算符不連續出現即可
+    const validChars = /^[0-9+\-*\/.]+$/;
+    if (!validChars.test(expr)) return false;
+
+    // 防止連續符號，例如 "**" 或 "//"
+    if (/[+\-*\/]{2,}/.test(expr)) return false;
     
-    // 統計「.」和「+-*/」的出現次數
-    let hasDecimal = expr.includes('.');
-    let hasOperator = /[+\-*\/]/.test(expr);
-    
-    // 規則：最多同時出現「.」和「+-*/」其中一個類型
-    // 或者兩個都出現，但要符合交替規則
-    
-    if (!hasDecimal && !hasOperator) {
-      // 只有數字，允許
-      return /^\d+$/.test(expr);
-    }
-    
-    if (hasDecimal && hasOperator) {
-      // 同時有 . 和運算符
-      // 規則：只能是「數字.數字運算符」或「運算符數字.數字」這樣的組合
-      // 例如：3.5+2, *0.5, /1.5 允許
-      // 例如：3+.5 不允許（小數點後無數字）
-      
-      // 檢查小數點是否有效（前後都有數字）
-      const decimalPattern = /\d+\.\d+/;
-      if (!decimalPattern.test(expr)) {
-        return false; // 小數點格式無效
-      }
-      
-      // 檢查運算符的位置
-      // 允許的模式：
-      // - *0.5, /1.5, -0.5 等（運算符在開頭）
-      // - 3.5+2, 2.5*3 等（小數點在數字中）
-      // - 不允許：3.5.2（兩個小數點）
-      // - 不允許：3+.5（小數點後無數字）
-      
-      if ((expr.match(/\./g) || []).length > 1) {
-        return false; // 多個小數點不允許
-      }
-      
-      return true;
-    }
-    
-    if (hasDecimal) {
-      // 只有小數點，檢查格式
-      return /^\d+\.\d*$/.test(expr) || /^\.\d+$/.test(expr);
-    }
-    
-    if (hasOperator) {
-      // 只有運算符和數字
-      // 允許的格式：*2, /3, +5, -2, 2*3, 5+2 等
-      return true;
-    }
-    
+    // 防止多個小數點
+    if ((expr.match(/\./g) || []).length > 1) return false;
+
     return true;
-  };
+    };
 
   validateTimerInput(hInput);
   validateTimerInput(mInput);

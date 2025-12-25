@@ -22,6 +22,8 @@ try {
 // 禁用V8代碼快取
 process.env.ELECTRON_DISABLE_V8_CODE_CACHE = '1';
 
+// 🔴 變數統一定義在這裡
+let currentFontFamily = 'cwTeXFangSong'; 
 let optionsWindow = null;
 let turntableWindow = null;
 let timerWindow = null;
@@ -52,6 +54,16 @@ app.on('will-quit', () => {
     globalShortcut.unregisterAll();
 });
 
+// 安全廣播函數
+function safeBroadcast(channel, data) {
+    const windows = [optionsWindow, turntableWindow, timerWindow];
+    windows.forEach(win => {
+        // 檢查視窗存在且尚未被銷毀
+        if (win && !win.isDestroyed() && win.webContents) {
+            win.webContents.send(channel, data);
+        }
+    });
+}
 
 function formatTime(totalSeconds) {
     const sign = totalSeconds < 0 ? '-' : '';
@@ -202,9 +214,12 @@ function createTurntableWindow(bounds = null) {
     turntableWindow.setMenu(menu);
     turntableWindow.setMenuBarVisibility(false);
 
+    // ✅ 修正：在這裡處理轉盤視窗建立後的初始化
     turntableWindow.webContents.on('did-finish-load', () => {
         if (turntableWindow && !turntableWindow.isDestroyed()) {
             turntableWindow.webContents.send('wheel-updated', lastKnownOptionsData);
+            // 補發字體設定 (解決 F10 重置問題)
+            turntableWindow.webContents.send('wheel-font-change', currentFontFamily);
         }
     });
 
@@ -269,10 +284,13 @@ function createTimerWindow(bounds = null) {
     timerWindow.setMenu(menu);
     timerWindow.setMenuBarVisibility(false);
 
+    // ✅ 修正：在這裡處理計時器視窗建立後的初始化
     timerWindow.webContents.on('did-finish-load', () => {
         broadcastTime();
         if (timerWindow && !timerWindow.isDestroyed()) {
+            // 補發顏色和字體設定 (解決 F10 重置問題)
             timerWindow.webContents.send('apply-color-update', lastKnownColors);
+            timerWindow.webContents.send('wheel-font-change', currentFontFamily);
         }
     });
 
@@ -298,6 +316,12 @@ app.on('activate', () => {
 
 ipcMain.handle('get-initial-options', () => lastKnownOptionsData);
 
+// ✅ 修正：統一字體切換邏輯
+ipcMain.on('wheel-font-change', (event, fontFamily) => {
+    currentFontFamily = fontFamily; // 記住當前字體
+    safeBroadcast('wheel-font-change', fontFamily); // 廣播給所有視窗
+});
+
 ipcMain.on('toggle-turntable', () => {
     if (turntableWindow && !turntableWindow.isDestroyed()) {
         turntableWindow.close();
@@ -319,13 +343,13 @@ ipcMain.on('state-update', (event, state) => {
     lastKnownState = state;
 });
 
-ipcMain.on('save-state-on-close', () => {
-    try {
-        fs.writeFileSync(autoSavePath, JSON.stringify(lastKnownState, null, 2));
-        console.log('應用程式狀態已自動儲存。');
-    } catch (error) {
-        console.error('自動儲存失敗:', error);
-    }
+ipcMain.on('save-state-on-close', (event, state) => {
+  try {
+    fs.writeFileSync(autoSavePath, JSON.stringify(state, null, 2));
+    console.log('應用程式狀態已自動儲存。');
+  } catch (error) {
+    console.error('自動儲存失敗:', error);
+  }
 });
 
 ipcMain.handle('export-data', async (event, state) => {
@@ -387,14 +411,11 @@ ipcMain.on('spin-result', (event, timeData) => {
         if (val === "" || val === "0" || val === "undefined") return currentVal;
 
         try {
-            // 模式 A：倍率模式 (開頭為 * 或 /)
             if (val.startsWith('*') || val.startsWith('/')) {
                 const operator = val[0];
                 const operandStr = val.substring(1).trim();
                 
-                // 驗證後面確實有數字
                 if (!operandStr || operandStr === '') {
-                    console.error(`模式錯誤: '${val}' - 運算符後必須有數字`);
                     return currentVal;
                 }
                 
@@ -409,25 +430,18 @@ ipcMain.on('spin-result', (event, timeData) => {
                 return isFinite(result) ? result : currentVal;
             }
 
-            // 模式 B：累加模式 (開頭為 + 或 -)
             if (val.startsWith('+') || val.startsWith('-')) {
                 const amountToAdd = new Function(`return ${val}`)();
                 if (typeof amountToAdd !== 'number' || isNaN(amountToAdd)) return currentVal;
                 return currentVal + amountToAdd;
             }
 
-            // 模式 C：完整算式 (例如: 12/2+5*2)
             const calculatedValue = new Function(`return ${val}`)();
             if (typeof calculatedValue !== 'number' || isNaN(calculatedValue)) return currentVal;
             
             return currentVal + calculatedValue;
 
         } catch (e) {
-            console.error(`解析算式 '${input}' 時出錯:`, e.message);
-            console.error(`提示：請確保輸入格式正確`);
-            console.error(`  倍率模式: *2, /2, *1.5`);
-            console.error(`  累加模式: +30, -5`);
-            console.error(`  完整算式: 2*5+3, 12/2`);
             return currentVal;
         }
     };
@@ -438,13 +452,6 @@ ipcMain.on('spin-result', (event, timeData) => {
 
     const finalTotalSeconds = Math.max(0, Math.round((nextH * 3600) + (nextM * 60) + nextS));
     countdownSeconds = finalTotalSeconds;
-
-    let dH = Math.floor(finalTotalSeconds / 3600);
-    let dM = Math.floor((finalTotalSeconds % 3600) / 60);
-    let dS = finalTotalSeconds % 60;
-
-    console.log(`轉盤指令 -> H:${timeData.h || '0'}, M:${timeData.m || '0'}, S:${timeData.s || '0'}`);
-    console.log(`時間變更 -> ${currentH}h:${currentM}m:${currentS}s >>> ${dH}h:${dM}m:${dS}s`);
 
     broadcastTime();
 });
@@ -464,3 +471,10 @@ ipcMain.on('color-update', (event, colors) => {
         timerWindow.webContents.send('apply-color-update', colors);
     }
 });
+
+ipcMain.on('request-wheel-font', (event) => {
+    // 修正：使用正確的變數名稱
+    event.sender.send('wheel-font-init', currentFontFamily);
+});
+
+// 🔴 這裡原本有你貼錯的 dangling code，已經被移除了，請確保你的檔案到這裡就結束了
