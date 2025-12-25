@@ -2,7 +2,7 @@ const { ipcRenderer } = require('electron');
 
 const spinButton = document.getElementById('spin_button');
 const modal = document.getElementById('modal');
-const winnerText = document.getElementById('winner-text'); // 修正：之前這裡變成了 winnerText
+const winnerText = document.getElementById('winner-text');
 const closeModalBtn = document.getElementById('close-modal-btn');
 
 let theWheel;
@@ -35,6 +35,7 @@ function updateWheel(options) {
         if (theWheel) theWheel.clearCanvas();
         return;
     }
+    
     const totalWeight = options.reduce((sum, opt) => sum + opt.weight, 0);
     const segmentsForWheel = options.map(opt => ({
         ...opt,
@@ -45,21 +46,22 @@ function updateWheel(options) {
         'numSegments': segmentsForWheel.length,
         'outerRadius': 240,
         'innerRadius': 70,
-        'textFontSize': 19, // ★★★ 核心修正：將字體大小從 16 增加到 20 ★★★
-        'textFontFamily': 'cwTeXFangSong', // 可選：設定一個更清晰的字體
-        'textFillStyle': 'black', // 可選：確保文字是黑色，更易讀
+        'textFontSize': 19,
+        'textFontFamily': 'cwTeXFangSong',
+        'textFillStyle': 'black',
+        'textOrientation': 'horizontal', // 確保文字方向正確
         'segments': segmentsForWheel,
         'animation': {
             'type': 'spinToStop',
+            'duration': 5, // 預設時長
             'callbackFinished': alertPrize,
             'soundTrigger': 'pin'
-        },
-        'pins': {
-            'number': segmentsForWheel.length * 2,
-            'fillStyle': 'silver',
-            'outerRadius': 4
         }
+        
     });
+    
+    // 繪製一次，避免第一次點擊時卡頓
+    theWheel.draw();
 }
 
 function alertPrize(indicatedSegment) {
@@ -74,12 +76,16 @@ function alertPrize(indicatedSegment) {
 
         winnerText.textContent = currentWinner.text;
         modal.classList.add('visible');
-        confetti({
-            particleCount: 150,
-            spread: 90,
-            origin: {
-                y: 0.6
-            }
+        
+        // 使用 requestAnimationFrame 延遲觸發，確保不會阻塞動畫
+        requestAnimationFrame(() => {
+            confetti({
+                particleCount: 150,
+                spread: 90,
+                origin: {
+                    y: 0.6
+                }
+            });
         });
     }
 }
@@ -91,10 +97,12 @@ closeModalBtn.addEventListener('click', () => {
 spinButton.addEventListener('click', () => {
     if (spinning || !theWheel || theWheel.numSegments === 0) return;
     spinning = true;
-
+    theWheel.animation.clearTheCanvas = true;
+    // 計算獲獎段落
     const totalWeight = parsedOptions.reduce((sum, opt) => sum + opt.weight, 0);
     let randomWeight = Math.random() * totalWeight;
     let winningSegmentIndex = -1;
+    
     for (let i = 0; i < parsedOptions.length; i++) {
         randomWeight -= parsedOptions[i].weight;
         if (randomWeight <= 0) {
@@ -102,16 +110,23 @@ spinButton.addEventListener('click', () => {
             break;
         }
     }
+    
     const winningSegment = theWheel.segments[winningSegmentIndex + 1];
     const stopAt = Math.floor(Math.random() * (winningSegment.endAngle - winningSegment.startAngle)) + winningSegment.startAngle;
     const randomSpins = Math.floor(Math.random() * 8) + 8;
-    const randomDuration = Math.floor(Math.random() * 5) + 7;
-    theWheel.animation = { ...theWheel.animation,
-        spins: randomSpins,
-        duration: randomDuration,
-        stopAngle: stopAt
-    };
+    const randomDuration = Math.floor(Math.random() * 3) + 6; // ★ 優化：縮短時間範圍至 6-9 秒，減少計算量
+    
+    // ★ 優化：直接修改動畫配置，而不是深度合併
+    theWheel.animation.spins = randomSpins;
+    theWheel.animation.duration = randomDuration;
+    theWheel.animation.stopAngle = stopAt;
+    
+    // ★ 優化：重置前先停止任何進行中的動畫
     theWheel.stopAnimation(false);
     theWheel.rotationAngle = 0;
-    theWheel.startAnimation();
+    
+    // ★ 優化：使用 requestAnimationFrame 延遲啟動動畫，確保 UI 不會被阻塞
+    requestAnimationFrame(() => {
+        theWheel.startAnimation();
+    });
 });

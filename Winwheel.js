@@ -1463,8 +1463,8 @@ Winwheel.prototype.windowToCanvas = function(x, y)
     let bbox = this.canvas.getBoundingClientRect();
 
     return {
-        x: Math.floor(x - bbox.left * (this.canvas.width / bbox.width)),
-        y: Math.floor(y - bbox.top *  (this.canvas.height / bbox.height))
+        x: (x - bbox.left) * (this.canvas.width / bbox.width),
+        y: (y - bbox.top) * (this.canvas.height / bbox.height)
     };
 }
 
