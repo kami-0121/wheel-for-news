@@ -1,7 +1,6 @@
 const { ipcRenderer } = require('electron');
 const Sortable = require('sortablejs');
 
-// --- 元素獲取 ---
 const showTurntableBtn = document.getElementById('show-turntable-btn');
 const showTimerBtn = document.getElementById('show-timer-btn');
 const importBtn = document.getElementById('import-btn');
@@ -18,27 +17,24 @@ const fontColorPicker = document.getElementById('font-color-picker');
 const fontSelect = document.querySelector('.divider-select');
 
 const fonts = [
-  { label: '仿宋（cwTeXFangSong）', family: 'cwTeXFangSong' },        // 系統預設
-  { label: '黑體（Noto Sans TC）', family: 'NotoSansTC' },           // 內建 woff2
-  { label: '思源宋體', family: 'SourceHanSerifTC' },                 // 內建 woff2（子集）
-  { label: '微軟正黑體', family: 'Microsoft JhengHei' },             // 系統字型
-  { label: '標楷體', family: 'DFKai-SB' },                            // 系統字型
-  { label: 'Excalifont', family: 'Excalifont-Regular' }              // 內建 woff2
+  { label: '仿宋（cwTeXFangSong）', family: 'cwTeXFangSong' },
+  { label: '黑體（Noto Sans TC）', family: 'NotoSansTC' },
+  { label: '思源宋體', family: 'SourceHanSerifTC' },
+  { label: '微軟正黑體', family: 'Microsoft JhengHei' },
+  { label: '標楷體', family: 'DFKai-SB' },
+  { label: 'Excalifont', family: 'Excalifont-Regular' }
 ];
 
-// 🔴 你原本少的就是這段：把字體塞進 select
 fonts.forEach(font => {
   const option = document.createElement('option');
-  option.value = font.family;      // 傳給 turntable.js 的值
-  option.textContent = font.label; // UI 顯示名稱
+  option.value = font.family;
+  option.textContent = font.label;
   fontSelect.appendChild(option);
 });
 
-// 切換字體 → 通知轉盤
 fontSelect.addEventListener('change', (e) => {
   const font = e.target.value;
     ipcRenderer.send('wheel-font-change', font);
-    // 選項視窗自己也套用，這樣預覽才一致
     document.getElementById('countdown-display').style.fontFamily = font;
 });
 function getCurrentState() {
@@ -46,18 +42,14 @@ function getCurrentState() {
   document.querySelectorAll('.option-row').forEach(row => {
     options.push({
       name: row.querySelector('.option-name-input').value.trim(),
-      // 機率維持 parseFloat，因為它必須是純數字供轉盤計算比例
       probability: parseFloat(row.querySelector('.option-prob-input').value) || 1,
       color: row.querySelector('.option-color-input').value,
-      
-      // ✅ 修正：移除 parseInt，直接拿字串值，保留 *2, /0.5, +30
       h: row.querySelector('.option-h-input').value || "0",
       m: row.querySelector('.option-m-input').value || "0",
       s: row.querySelector('.option-s-input').value || "0",
     });
   });
 
-  // ... (其餘處理時間和顏色的部分保持不變)
   const timeText = countdownDisplay.textContent;
   const timeParts = timeText.replace('-', '').split(':');
   const sign = timeText.startsWith('-') ? -1 : 1;
@@ -110,7 +102,6 @@ function sendColorUpdate() {
   sendStateToMain();
 }
 
-// --- IPC 通訊 ---
 ipcRenderer.on('time-update', (event, timeString) => {
   countdownDisplay.textContent = timeString;
   sendStateToMain();
@@ -137,7 +128,6 @@ ipcRenderer.on('load-state', (event, state) => {
   applyState(state);
 });
 
-// --- 事件監聽 ---
 exportBtn.addEventListener('click', async () => {
   const currentState = getCurrentState();
   const result = await ipcRenderer.invoke('export-data', currentState);
@@ -243,7 +233,6 @@ timeAdjustButtons.forEach(button => {
 showTurntableBtn.addEventListener('click', () => ipcRenderer.send('toggle-turntable'));
 showTimerBtn.addEventListener('click', () => ipcRenderer.send('toggle-timer'));
 
-// --- 介面核心函數 ---
 const getRandomColor = () => `#${Math.floor(Math.random()*16777215).toString(16).padStart(6, '0')}`;
 
 function updatePercentages() {
@@ -280,7 +269,6 @@ function createOptionRow(name = '', probability = 1, color = getRandomColor(), h
   nameInput.placeholder = '選項名稱';
   nameInput.value = name;
 
-  // 概率權重輸入（不限制長度）
   const probInput = document.createElement('input');
   probInput.type = 'number';
   probInput.className = 'option-prob-input';
@@ -321,17 +309,12 @@ function createOptionRow(name = '', probability = 1, color = getRandomColor(), h
   if (s !== undefined) sInput.value = s;
   sInput.oninput = sendStateToMain;
 
-  // 輸入驗證事件 - 只允許 0-9、+、-、.、*、/
   const validateTimerInput = (input) => {
     input.addEventListener('input', (e) => {
       const originalValue = e.target.value;
-      // 只允許數字、+、-、.、*、/
       let filteredValue = originalValue.replace(/[^0-9+\-.*\/]/g, '');
       
-      // 驗證規則：最多出現一次「.」和「+-*/」的組合
-      // 規則：. 和 +-*/ 最多交替出現一次
       if (!isValidTimerExpression(filteredValue)) {
-        // 恢復到上一個有效值
         e.target.value = e.target.dataset.lastValid || '';
       } else {
         e.target.value = filteredValue;
@@ -341,7 +324,6 @@ function createOptionRow(name = '', probability = 1, color = getRandomColor(), h
 
     input.addEventListener('blur', (e) => {
       const val = e.target.value.trim();
-      // 只有符號的情況才標記為紅色
       if (val === '*' || val === '/' || val === '+' || val === '-' || val === '.') {
         e.target.style.border = '2px solid red';
       } else {
@@ -356,18 +338,13 @@ function createOptionRow(name = '', probability = 1, color = getRandomColor(), h
     });
   };
 
-  // 驗證運算式是否符合規則
     const isValidTimerExpression = (expr) => {
     if (!expr) return true;
-    // 允許：數字、小數點、以及開頭或中間的運算符
-    // 簡化規則：只要不包含非法字元，且小數點/運算符不連續出現即可
     const validChars = /^[0-9+\-*\/.]+$/;
     if (!validChars.test(expr)) return false;
 
-    // 防止連續符號，例如 "**" 或 "//"
     if (/[+\-*\/]{2,}/.test(expr)) return false;
     
-    // 防止多個小數點
     if ((expr.match(/\./g) || []).length > 1) return false;
 
     return true;
@@ -400,7 +377,6 @@ function createOptionRow(name = '', probability = 1, color = getRandomColor(), h
   nameInput.oninput = sendStateToMain;
 }
 
-// --- 初始載入 ---
 function loadDefaultOptions() {
   createOptionRow('加 1 分鐘', 1, '#2ecc71', undefined, 1, undefined);
   createOptionRow('減 30 秒', 1, '#e74c3c', undefined, undefined, -30);

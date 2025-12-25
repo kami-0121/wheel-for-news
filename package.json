@@ -1,17 +1,17 @@
 {
-  "name": "wheel-timer",
-  "productName": "轉盤計時器",
+  "name": "Toastiwa-wheel-timer",
+  "productName": "Toastiwaの轉盤計時器",
   "version": "1.5.0",
   "main": "main.js",
   "author": "kami0121",
-  "license": "ISC",
+  "license": "MIT",
   "scripts": {
     "start": "electron .",
     "dist": "electron-builder"
   },
   "build": {
     "appId": "com.lkami.timer",
-    "productName": "轉盤計時器",
+    "productName": "Toastiwaの轉盤計時器",
     "win": {
       "target": "nsis",
       "icon": "icon.ico"

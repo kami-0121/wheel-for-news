@@ -2,11 +2,8 @@ const { app, BrowserWindow, ipcMain, Menu, dialog, globalShortcut } = require('e
 const path = require('path');
 const fs = require('fs');
 
-// ===== 快取和臨時目錄配置 =====
-// 禁用所有硬體加速
 app.disableHardwareAcceleration();
 
-// 使用用戶資料目錄下的快取文件夾
 const userDataPath = app.getPath('userData');
 const cacheDir = path.join(userDataPath, 'cache');
 
@@ -19,11 +16,9 @@ try {
     console.log('快取目錄設定提示:', err.message);
 }
 
-// 禁用V8代碼快取
 process.env.ELECTRON_DISABLE_V8_CODE_CACHE = '1';
 
-// 🔴 變數統一定義在這裡
-let currentFontFamily = 'cwTeXFangSong'; 
+let currentFontFamily = 'cwTeXFangSong';
 let optionsWindow = null;
 let turntableWindow = null;
 let timerWindow = null;
@@ -31,7 +26,6 @@ let isTurntableFrameless = false, isTimerFrameless = false;
 let lastKnownOptionsData = [], countdownSeconds = 0, countdownInterval = null;
 const autoSavePath = path.join(app.getPath('userData'), 'app-state.json');
 let lastKnownColors = { background: '#2c3e50', font: '#ecf0f1' };
-
 
 app.whenReady().then(() => {
     Menu.setApplicationMenu(null);
@@ -54,11 +48,9 @@ app.on('will-quit', () => {
     globalShortcut.unregisterAll();
 });
 
-// 安全廣播函數
 function safeBroadcast(channel, data) {
     const windows = [optionsWindow, turntableWindow, timerWindow];
     windows.forEach(win => {
-        // 檢查視窗存在且尚未被銷毀
         if (win && !win.isDestroyed() && win.webContents) {
             win.webContents.send(channel, data);
         }
@@ -214,11 +206,9 @@ function createTurntableWindow(bounds = null) {
     turntableWindow.setMenu(menu);
     turntableWindow.setMenuBarVisibility(false);
 
-    // ✅ 修正：在這裡處理轉盤視窗建立後的初始化
     turntableWindow.webContents.on('did-finish-load', () => {
         if (turntableWindow && !turntableWindow.isDestroyed()) {
             turntableWindow.webContents.send('wheel-updated', lastKnownOptionsData);
-            // 補發字體設定 (解決 F10 重置問題)
             turntableWindow.webContents.send('wheel-font-change', currentFontFamily);
         }
     });
@@ -284,11 +274,9 @@ function createTimerWindow(bounds = null) {
     timerWindow.setMenu(menu);
     timerWindow.setMenuBarVisibility(false);
 
-    // ✅ 修正：在這裡處理計時器視窗建立後的初始化
     timerWindow.webContents.on('did-finish-load', () => {
         broadcastTime();
         if (timerWindow && !timerWindow.isDestroyed()) {
-            // 補發顏色和字體設定 (解決 F10 重置問題)
             timerWindow.webContents.send('apply-color-update', lastKnownColors);
             timerWindow.webContents.send('wheel-font-change', currentFontFamily);
         }
@@ -316,10 +304,9 @@ app.on('activate', () => {
 
 ipcMain.handle('get-initial-options', () => lastKnownOptionsData);
 
-// ✅ 修正：統一字體切換邏輯
 ipcMain.on('wheel-font-change', (event, fontFamily) => {
-    currentFontFamily = fontFamily; // 記住當前字體
-    safeBroadcast('wheel-font-change', fontFamily); // 廣播給所有視窗
+    currentFontFamily = fontFamily;
+    safeBroadcast('wheel-font-change', fontFamily);
 });
 
 ipcMain.on('toggle-turntable', () => {
@@ -343,13 +330,25 @@ ipcMain.on('state-update', (event, state) => {
     lastKnownState = state;
 });
 
-ipcMain.on('save-state-on-close', (event, state) => {
-  try {
-    fs.writeFileSync(autoSavePath, JSON.stringify(state, null, 2));
-    console.log('應用程式狀態已自動儲存。');
-  } catch (error) {
-    console.error('自動儲存失敗:', error);
-  }
+function saveAppState() {
+    if (!lastKnownState || Object.keys(lastKnownState).length === 0) return;
+
+    lastKnownState.fontFamily = currentFontFamily;
+
+    try {
+        fs.writeFileSync(autoSavePath, JSON.stringify(lastKnownState, null, 2));
+        console.log('設定檔已安全儲存。');
+    } catch (error) {
+        console.error('自動儲存失敗:', error);
+    }
+}
+
+ipcMain.on('save-state-on-close', () => {
+    saveAppState();
+});
+
+app.on('will-quit', () => {
+    saveAppState();
 });
 
 ipcMain.handle('export-data', async (event, state) => {
@@ -406,7 +405,7 @@ ipcMain.on('spin-result', (event, timeData) => {
 
     const processField = (input, currentVal) => {
         if (input === null || input === undefined || input === '') return currentVal;
-        
+
         let val = String(input).trim();
         if (val === "" || val === "0" || val === "undefined") return currentVal;
 
@@ -414,19 +413,19 @@ ipcMain.on('spin-result', (event, timeData) => {
             if (val.startsWith('*') || val.startsWith('/')) {
                 const operator = val[0];
                 const operandStr = val.substring(1).trim();
-                
+
                 if (!operandStr || operandStr === '') {
                     return currentVal;
                 }
-                
+
                 const factor = new Function(`return ${operandStr}`)();
-                
+
                 if (typeof factor !== 'number' || isNaN(factor)) return currentVal;
-                
+
                 let result;
                 if (operator === '*') result = currentVal * factor;
                 if (operator === '/') result = factor !== 0 ? currentVal / factor : currentVal;
-                
+
                 return isFinite(result) ? result : currentVal;
             }
 
@@ -438,7 +437,7 @@ ipcMain.on('spin-result', (event, timeData) => {
 
             const calculatedValue = new Function(`return ${val}`)();
             if (typeof calculatedValue !== 'number' || isNaN(calculatedValue)) return currentVal;
-            
+
             return currentVal + calculatedValue;
 
         } catch (e) {
@@ -473,8 +472,5 @@ ipcMain.on('color-update', (event, colors) => {
 });
 
 ipcMain.on('request-wheel-font', (event) => {
-    // 修正：使用正確的變數名稱
     event.sender.send('wheel-font-init', currentFontFamily);
 });
-
-// 🔴 這裡原本有你貼錯的 dangling code，已經被移除了，請確保你的檔案到這裡就結束了
